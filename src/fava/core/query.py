@@ -1,0 +1,184 @@
+"""Query result types."""
+
+from __future__ import annotations
+
+import datetime as dt
+from dataclasses import dataclass
+from decimal import Decimal
+from typing import TYPE_CHECKING
+
+from beancount.core import amount
+from beancount.core import position
+from beancount.core.inventory import Inventory
+
+from fava.core.conversion import UNITS
+from fava.core.inventory import _Amount
+from fava.core.inventory import _Position
+
+if TYPE_CHECKING:  # pragma: no cover
+    from typing import Any
+    from typing import Literal
+    from typing import TypeAlias
+    from typing import TypeVar
+
+    from fava.beans import protocols
+    from fava.core.inventory import SimpleCounterInventory
+
+    T = TypeVar("T")
+
+    QueryRowValue = Any
+
+    # This is not a complete enumeration of all possible column types but just
+    # of the ones we pass in some specific serialisation to the frontend.
+    # Everything unknown will be stringified (by ObjectColumn).
+    SerialisedQueryRowValue = (
+        bool
+        | int
+        | str
+        | dt.date
+        | Decimal
+        | _Amount
+        | _Position
+        | SimpleCounterInventory
+        | None
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class QueryResultTable:
+    """Table query result."""
+
+    types: list[BaseColumn]
+    rows: list[tuple[SerialisedQueryRowValue, ...]]
+    t: Literal["table"] = "table"
+
+
+@dataclass(frozen=True, slots=True)
+class QueryResultText:
+    """Text query result."""
+
+    contents: str
+    t: Literal["string"] = "string"
+
+
+QueryResult: TypeAlias = QueryResultTable | QueryResultText
+
+
+@dataclass(frozen=True, slots=True)
+class BaseColumn:
+    """A query column."""
+
+    name: str
+    dtype: str
+
+    @staticmethod
+    def serialise(
+        val: QueryRowValue,
+    ) -> SerialisedQueryRowValue:
+        """Serialiseable version of the column value."""
+        return val  # type: ignore[no-any-return]
+
+
+@dataclass(frozen=True, slots=True)
+class BoolColumn(BaseColumn):
+    """A boolean query column."""
+
+    dtype: str = "bool"
+
+
+@dataclass(frozen=True, slots=True)
+class DecimalColumn(BaseColumn):
+    """A Decimal query column."""
+
+    dtype: str = "Decimal"
+
+
+@dataclass(frozen=True, slots=True)
+class IntColumn(BaseColumn):
+    """A int query column."""
+
+    dtype: str = "int"
+
+
+@dataclass(frozen=True, slots=True)
+class StrColumn(BaseColumn):
+    """A str query column."""
+
+    dtype: str = "str"
+
+
+@dataclass(frozen=True, slots=True)
+class DateColumn(BaseColumn):
+    """A date query column."""
+
+    dtype: str = "date"
+
+
+@dataclass(frozen=True, slots=True)
+class PositionColumn(BaseColumn):
+    """A Position query column."""
+
+    dtype: str = "Position"
+
+    @staticmethod
+    def serialise(val: protocols.Position | None) -> _Position | None:
+        """Serialise a position, avoiding it being treated as a tuple."""
+        return _Position.from_position(val)
+
+
+@dataclass(frozen=True, slots=True)
+class SetColumn(BaseColumn):
+    """A set query column."""
+
+    dtype: str = "set"
+
+
+@dataclass(frozen=True, slots=True)
+class AmountColumn(BaseColumn):
+    """An amount query column."""
+
+    dtype: str = "Amount"
+
+    @staticmethod
+    def serialise(val: protocols.Amount | None) -> _Amount | None:
+        """Serialise an amount, avoiding it being treated as a tuple."""
+        return _Amount.from_amount(val)
+
+
+@dataclass(frozen=True, slots=True)
+class ObjectColumn(BaseColumn):
+    """An object query column."""
+
+    dtype: str = "object"
+
+    @staticmethod
+    def serialise(val: object) -> str:
+        """Serialise an object of unknown type to a string."""
+        return str(val)
+
+
+@dataclass(frozen=True, slots=True)
+class InventoryColumn(BaseColumn):
+    """A str query column."""
+
+    dtype: str = "Inventory"
+
+    @staticmethod
+    def serialise(
+        val: Inventory | None,
+    ) -> SimpleCounterInventory | None:
+        """Serialise an inventory."""
+        return UNITS.apply_inventory(val) if val is not None else None
+
+
+COLUMNS = {
+    amount.Amount: AmountColumn,
+    Decimal: DecimalColumn,
+    Inventory: InventoryColumn,
+    position.Position: PositionColumn,
+    bool: BoolColumn,
+    dt.date: DateColumn,
+    int: IntColumn,
+    set: SetColumn,
+    str: StrColumn,
+}

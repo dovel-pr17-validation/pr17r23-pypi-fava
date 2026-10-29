@@ -1,0 +1,144 @@
+import { deepEqual } from "node:assert/strict";
+import { test } from "node:test";
+
+import {
+  all_matching,
+  stratify,
+  stratify_accounts,
+  walk,
+} from "../src/lib/tree.ts";
+
+test("tree: stratify_accounts", () => {
+  const empty = stratify_accounts(
+    [],
+    () => "",
+    () => null,
+  );
+  deepEqual(empty, { children: [] });
+  const emptyWithData = stratify_accounts(
+    [],
+    () => "",
+    () => ({ test: "test" }),
+  );
+  deepEqual(emptyWithData, { children: [], test: "test" });
+  const tree = stratify_accounts(
+    ["aName:cName", "aName", "aName:bName"],
+    (s) => s,
+    (name) => ({ name }),
+  );
+
+  deepEqual(tree, {
+    children: [
+      {
+        children: [
+          { children: [], name: "aName:bName" },
+          { children: [], name: "aName:cName" },
+        ],
+        name: "aName",
+      },
+    ],
+    name: "",
+  });
+  deepEqual(
+    stratify_accounts(
+      ["Assets:Cash"],
+      (s) => s,
+      (name) => ({ name }),
+    ),
+    {
+      children: [
+        {
+          children: [{ children: [], name: "Assets:Cash" }],
+          name: "Assets",
+        },
+      ],
+      name: "",
+    },
+  );
+});
+
+test("tree: stratify", () => {
+  const empty = stratify(
+    [],
+    () => "",
+    () => null,
+    (s) => slash_parent(s),
+  );
+  deepEqual(empty, { children: [] });
+  const emptyWithData = stratify(
+    [],
+    () => "",
+    () => ({ test: "test" }),
+    (s) => slash_parent(s),
+  );
+  deepEqual(emptyWithData, { children: [], test: "test" });
+  const tree = stratify(
+    ["aName/cName", "aName", "aName/bName"],
+    (s) => s,
+    (name) => ({ name }),
+    (s) => slash_parent(s),
+  );
+
+  deepEqual(tree, {
+    children: [
+      {
+        children: [
+          { children: [], name: "aName/cName" },
+          { children: [], name: "aName/bName" },
+        ],
+        name: "aName",
+      },
+    ],
+    name: "",
+  });
+  deepEqual(
+    stratify(
+      ["Assets/Cash"],
+      (s) => s,
+      (name) => ({ name }),
+      (s) => slash_parent(s),
+    ),
+    {
+      children: [
+        {
+          children: [{ children: [], name: "Assets/Cash" }],
+          name: "Assets",
+        },
+      ],
+      name: "",
+    },
+  );
+});
+
+test("tree: walk and all_matching", () => {
+  const tree = stratify_accounts(
+    ["Assets:Cash", "Expenses:Food", "Assets:Bank"],
+    (s) => s,
+    (name) => ({ name }),
+  );
+  const names = (nodes: Iterable<{ name: string }>) =>
+    [...nodes].map((n) => n.name);
+
+  deepEqual(names(walk({ name: "leaf", children: [] })), ["leaf"]);
+  deepEqual(names(walk(tree)), [
+    "",
+    "Assets",
+    "Assets:Bank",
+    "Assets:Cash",
+    "Expenses",
+    "Expenses:Food",
+  ]);
+
+  deepEqual(names(all_matching(tree, () => false)), []);
+  deepEqual(names(all_matching(tree, (n) => n.name.startsWith("Assets"))), [
+    "Assets",
+    "Assets:Bank",
+    "Assets:Cash",
+  ]);
+  deepEqual(names(all_matching(tree, (n) => n.name === "")), [""]);
+});
+
+function slash_parent(name: string): string {
+  const parent_end = name.lastIndexOf("/");
+  return parent_end > 0 ? name.slice(0, parent_end) : "";
+}

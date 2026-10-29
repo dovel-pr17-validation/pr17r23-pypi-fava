@@ -1,0 +1,103 @@
+/**
+ * Helper functions to format numbers and dates.
+ */
+
+import { format } from "d3-format";
+import { timeFormat, utcFormat } from "d3-time-format";
+
+import type { FiscalYearEnd, Interval } from "./lib/interval.ts";
+
+/**
+ * A number formatting function for a locale.
+ * @param locale - The locale to use.
+ * @param precision - The number of decimal digits to show.
+ */
+export function locale_formatter(
+  locale: string | null,
+  precision = 2,
+): (num: number) => string {
+  if (locale == null) {
+    return format(`.${precision.toString()}f`);
+  }
+  // this needs to be between 0 and 20
+  const digits = Math.max(0, Math.min(precision, 20));
+  const fmt = new Intl.NumberFormat(locale.replace("_", "-"), {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+  return fmt.format.bind(fmt);
+}
+
+const percentage_format = format(".2f");
+function percentage(number: number): string {
+  return `${percentage_format(Math.abs(number) * 100)}%`;
+}
+
+/** Obscure numbers for incognito mode. */
+export const replace_numbers = (num: string): string =>
+  num.replace(/[0-9]/g, "X");
+
+export interface FormatterContext {
+  /** Render an amount to a string like "2.00 USD". */
+  amount: (num: number, currency: string) => string;
+  /** Render an number for a currency like "2.00". */
+  num: (num: number, currency: string) => string;
+  /** Render a percentage, e.g. a 0.8345 as "83.45%". */
+  percentage: (num: number) => string;
+}
+
+/** Build the formatter context for the given configuration */
+export function formatter_context(
+  incognito: boolean,
+  locale: string | null,
+  precisions: Record<string, number>,
+): FormatterContext {
+  const default_formatter = locale_formatter(locale);
+  const currency_formatters = Object.fromEntries(
+    Object.entries(precisions).map(([currency, prec]) => [
+      currency,
+      locale_formatter(locale, prec),
+    ]),
+  );
+  const num_raw = (n: number, c: string) =>
+    (currency_formatters[c] ?? default_formatter)(n);
+
+  const num = incognito
+    ? (n: number, c: string) => replace_numbers(num_raw(n, c))
+    : num_raw;
+  const amount = (n: number, c: string) => `${num(n, c)} ${c}`;
+
+  return { amount, num, percentage };
+}
+
+/** Format the date as a ISO-8601 date string. */
+export const day = utcFormat("%Y-%m-%d");
+
+export const week = utcFormat("%G-W%V");
+export const month = utcFormat("%Y-%m");
+export const quarter = (d: Date): string =>
+  `${d.getUTCFullYear().toString()}-Q${(Math.floor(d.getUTCMonth() / 3) + 1).toString()}`;
+export const year = utcFormat("%Y");
+
+/** Date formatters for human consumption, for a given fiscal year end. */
+export function get_date_format(
+  interval: Interval,
+  fye: FiscalYearEnd,
+): (d: Date) => string {
+  return {
+    year,
+    fiscal_year: fye.format_year.bind(fye),
+    quarter,
+    fiscal_quarter: fye.format_quarter.bind(fye),
+    month,
+    week,
+    day,
+  }[interval];
+}
+
+const local_day = timeFormat("%Y-%m-%d");
+
+/** Today as a ISO-8601 date string. */
+export function today_as_string(): string {
+  return local_day(new Date());
+}

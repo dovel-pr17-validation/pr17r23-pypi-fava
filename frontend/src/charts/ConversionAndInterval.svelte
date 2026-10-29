@@ -1,0 +1,57 @@
+<script lang="ts">
+  import SelectCombobox from "./../components/SelectCombobox.svelte";
+  import { _, format } from "../i18n.ts";
+  import {
+    DEFAULT_INTERVAL,
+    get_interval,
+    interval_label,
+  } from "../lib/interval.ts";
+  import { router } from "../router.ts";
+  import { conversions } from "../stores/chart.ts";
+  import { fiscal_year_end } from "../stores/fava_options.ts";
+  import { conversion, interval } from "../stores/url.ts";
+
+  let interval_options = $derived($fiscal_year_end.available_intervals);
+
+  const conversion_description = (option: string) => {
+    switch (option) {
+      case "at_cost":
+        return _("At Cost");
+      case "at_value":
+        return _("At Market Value");
+      case "units":
+        return _("Units");
+      default:
+        return format(_("Converted to %(currency)s"), { currency: option });
+    }
+  };
+
+  const is_currency_conversion = (option: string) =>
+    !["at_cost", "at_value", "units"].includes(option);
+</script>
+
+<SelectCombobox
+  bind:value={
+    () => $conversion,
+    (value: string) => {
+      router.set_search_param("conversion", value === "at_cost" ? "" : value);
+    }
+  }
+  options={$conversions}
+  description={conversion_description}
+  multiple_select={is_currency_conversion}
+/>
+
+<SelectCombobox
+  bind:value={
+    () => $interval,
+    (value: string) => {
+      router.set_search_param(
+        "interval",
+        value === DEFAULT_INTERVAL ? "" : value,
+      );
+    }
+  }
+  options={interval_options}
+  description={(o: string) => interval_label(get_interval(o, $fiscal_year_end))}
+/>

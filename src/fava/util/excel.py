@@ -1,0 +1,113 @@
+"""Writing query results to CSV and spreadsheet documents."""
+
+from __future__ import annotations
+
+import csv
+import datetime as dt
+import io
+from collections.abc import Set as AbstractSet
+from decimal import Decimal
+from importlib.util import find_spec
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    from collections.abc import Sequence
+
+    from beanquery import Column
+
+    ResultRow = tuple[object, ...]
+
+
+# Just check whether it's installed here without importing.
+HAVE_EXCEL = find_spec("pyexcel") is not None
+
+
+class InvalidResultFormatError(ValueError):  # noqa: D101
+    def __init__(self, result_format: str) -> None:  # pragma: no cover
+        super().__init__(f"Invalid result format: {result_format}")
+
+
+def to_excel(
+    types: Sequence[Column],
+    rows: Sequence[ResultRow],
+    result_format: str,
+    query_string: str,
+) -> io.BytesIO:
+    """Save result to spreadsheet document.
+
+    Args:
+        types: query result_types.
+        rows: query result_rows.
+        result_format: 'xlsx' or 'ods'.
+        query_string: The query string (is written to the document).
+
+    Returns:
+        The (binary) file contents.
+    """
+    if result_format not in {"xlsx", "ods"}:  # pragma: no cover
+        raise InvalidResultFormatError(result_format)
+    resp = io.BytesIO()
+    # Lazily import pyexcel
+    # since this is a conditional dependency, there will be different mypy
+    # errors depending on whether it's installed
+    import pyexcel  # type: ignore  # noqa: PGH003, PLC0415
+
+    book = pyexcel.Book(
+        {
+            "Results": _result_array(types, rows),
+            "Query": [["Query"], [query_string]],
+        }
+    )
+    book.save_to_memory(result_format, resp)
+    resp.seek(0)
+    return resp
+
+
+def to_csv(types: Sequence[Column], rows: Sequence[ResultRow]) -> io.BytesIO:
+    """Save result to CSV.
+
+    Args:
+        types: query result_types.
+        rows: query result_rows.
+
+    Returns:
+        The (binary) file contents.
+    """
+    resp = io.StringIO()
+    result_array = _result_array(types, rows)
+    csv.writer(resp).writerows(result_array)
+    return io.BytesIO(resp.getvalue().encode("utf-8"))
+
+
+def _result_array(
+    types: Sequence[Column],
+    rows: Sequence[ResultRow],
+) -> list[list[str | float]]:
+    result_array: list[list[str | float]] = [[t.name for t in types]]
+    result_array.extend(_row_to_pyexcel(row, types) for row in rows)
+    return result_array
+
+
+def _row_to_pyexcel(
+    row: ResultRow, header: Sequence[Column]
+) -> list[str | float]:
+    result: list[str | float] = []
+    for idx, column in enumerate(header):
+        value = row[idx]
+        type_ = column.datatype
+        if type_ is set and isinstance(value, AbstractSet):
+            result.append(" ".join(value))
+        elif value is None:
+            result.append("")
+        elif type_ is Decimal and isinstance(value, Decimal):
+            result.append(float(value))
+        elif type_ is int and isinstance(value, int):
+            result.append(value)
+        elif type_ is dt.date:
+            result.append(str(value))
+        else:
+            if not isinstance(value, str):  # pragma: no cover
+                msg = f"unexpected type {type(value)}"
+                raise TypeError(msg)
+            result.append(value)
+    return result

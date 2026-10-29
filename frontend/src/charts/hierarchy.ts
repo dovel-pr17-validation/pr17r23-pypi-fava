@@ -1,0 +1,205 @@
+import { some, sum } from "d3-array";
+import type { HierarchyNode } from "d3-hierarchy";
+import { hierarchy } from "d3-hierarchy";
+import type { Writable } from "svelte/store";
+import { writable } from "svelte/store";
+
+import type { FormatterContext } from "../format.ts";
+import { type TreeNode, walk } from "../lib/tree.ts";
+import type { Validator } from "../lib/validation.ts";
+import {
+  array,
+  boolean,
+  decimal,
+  default_value,
+  lazy,
+  object,
+  optional,
+  record,
+  string,
+} from "../lib/validation.ts";
+import { sort_by_strings } from "../sort/index.ts";
+import type { ChartContext } from "./context.ts";
+import type { ParsedFavaChart } from "./index.ts";
+
+/**
+ * An account tree - data provided with a fava.core.tree.SerialisedTreeNode.
+ *
+ * Used in the hierarchy charts but also in e.g. the tree-tables.
+ */
+export type AccountTreeNode = TreeNode<{
+  readonly account: string;
+  readonly balance: Record<string, number>;
+  readonly balance_children: Record<string, number>;
+  readonly cost: Record<string, number> | null;
+  readonly cost_children: Record<string, number> | null;
+  readonly has_txns: boolean;
+}>;
+
+const sort_children = (values: AccountTreeNode[]) =>
+  sort_by_strings(values, (v) => v.account);
+
+const inventory = record(decimal);
+
+export const account_hierarchy_validator: Validator<AccountTreeNode> = object({
+  account: string,
+  balance: inventory,
+  balance_children: inventory,
+  children: lazy(
+    () => (json) => array(account_hierarchy_validator)(json).map(sort_children),
+  ),
+  cost: optional(inventory),
+  cost_children: optional(inventory),
+  has_txns: default_value(boolean, () => false),
+});
+
+/** The data for a single account in a d3-hierarchy. */
+export type AccountHierarchyDatum = TreeNode<{
+  readonly account: string;
+  readonly balance: Record<string, number>;
+  readonly dummy: boolean;
+}>;
+
+export type AccountHierarchyInputDatum = TreeNode<{
+  readonly account: string;
+  readonly balance: Record<string, number>;
+}>;
+
+/** A d3-hierarchy node for an account. */
+export type AccountHierarchyNode = HierarchyNode<AccountHierarchyDatum>;
+
+/** Render the account balance with a percentage of the total. */
+export function balance_with_percentage(
+  $ctx: FormatterContext,
+  d: AccountHierarchyNode,
+  currency: string,
+): string {
+  const value = d.value ?? 0;
+  const root_value = d.ancestors().at(-1)?.value ?? 0;
+  return root_value
+    ? `${$ctx.amount(value, currency)} (${$ctx.percentage(value / root_value)})`
+    : $ctx.amount(value, currency);
+}
+
+/**
+ * Add internal nodes as dummy leaf nodes to their own children.
+ *
+ * In the treemap, we only render leaf nodes, so for accounts that have both
+ * children and a balance, we want to duplicate them as leaf nodes.
+ *
+ * Toggled accounts are collapsed into a single leaf.
+ */
+function add_internal_nodes_as_leaves(
+  node: AccountHierarchyInputDatum,
+  toggled_accounts: ReadonlySet<string>,
+): AccountHierarchyDatum {
+  const { account, balance, children } = node;
+  if (children.length && toggled_accounts.has(account)) {
+    const total: Record<string, number> = {};
+    for (const n of walk(node)) {
+      for (const [currency, value] of Object.entries(n.balance)) {
+        total[currency] = (total[currency] ?? 0) + value;
+      }
+    }
+    return { account, balance: total, children: [], dummy: false };
+  }
+  if (children.length) {
+    const c = children.map((child) =>
+      add_internal_nodes_as_leaves(child, toggled_accounts),
+    );
+    c.push({ account, balance, children: [], dummy: true });
+    return { account, balance: {}, children: c, dummy: false };
+  }
+  return { account, balance, children: [], dummy: false };
+}
+
+export class HierarchyChart {
+  readonly type = "hierarchy";
+  /** All currencies for which we have an hierarchy. */
+  readonly currencies: readonly string[];
+  /** The currency to show the treemap of. */
+  readonly treemap_currency: Writable<string> | null;
+  readonly label: string | null;
+  /** Whether to collapse toggled accounts (not for query charts). */
+  readonly #collapse_toggled: boolean;
+
+  readonly #root: AccountHierarchyInputDatum;
+
+  constructor(
+    label: string | null,
+    root: AccountHierarchyInputDatum,
+    currencies: readonly string[],
+    collapse_toggled = true,
+  ) {
+    this.label = label;
+    this.#collapse_toggled = collapse_toggled;
+    this.#root = root;
+    this.currencies = currencies.filter((currency) =>
+      some(walk(root), (n) => (n.balance[currency] ?? 0) !== 0),
+    );
+    const first_currency = this.currencies[0];
+    this.treemap_currency =
+      first_currency != null ? writable(first_currency) : null;
+  }
+
+  /** Build the hierarchies (one per currency) with toggled accounts collapsed. */
+  hierarchies(
+    toggled_accounts: ReadonlySet<string>,
+  ): ReadonlyMap<string, AccountHierarchyNode> {
+    const root = add_internal_nodes_as_leaves(
+      this.#root,
+      this.#collapse_toggled ? toggled_accounts : new Set(),
+    );
+    return new Map(
+      this.currencies.map((currency) => {
+        const r = hierarchy(root);
+        const root_balance = sum(
+          r.descendants(),
+          (n) => n.data.balance[currency] ?? 0,
+        );
+        // depending on the balance for this currency in the root,
+        // build the tree either for all positive values or all negative values
+        const sign = root_balance ? Math.sign(root_balance) : 1;
+        r.sum(
+          (d) => sign * Math.max(sign * (d.balance[currency] ?? 0), 0),
+        ).sort((a, b) => sign * ((b.value ?? 0) - (a.value ?? 0)));
+        return [currency, r];
+      }),
+    );
+  }
+}
+
+const hierarchy_validator = object({
+  label: string,
+  key: optional(string),
+  data: account_hierarchy_validator,
+});
+
+export class ParsedHierarchyChart implements ParsedFavaChart {
+  readonly label: string | null;
+  readonly data: AccountHierarchyInputDatum;
+  readonly key: string | null;
+
+  constructor(
+    label: string | null,
+    data: AccountHierarchyInputDatum,
+    key: string | null = null,
+  ) {
+    this.label = label;
+    this.data = data;
+    this.key = key;
+  }
+
+  static from_node = (node: AccountTreeNode): ParsedHierarchyChart => {
+    return new ParsedHierarchyChart(node.account, node);
+  };
+
+  static validator: Validator<ParsedHierarchyChart> = (json) =>
+    hierarchy_validator(json).map(
+      ({ label, data, key }) => new ParsedHierarchyChart(label, data, key),
+    );
+
+  with_context({ currencies }: ChartContext): HierarchyChart {
+    return new HierarchyChart(this.label, this.data, currencies);
+  }
+}

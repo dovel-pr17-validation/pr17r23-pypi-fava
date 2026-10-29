@@ -1,0 +1,440 @@
+from __future__ import annotations
+
+import datetime as dt
+from decimal import Decimal
+from typing import cast
+from typing import TYPE_CHECKING
+
+import msgspec
+import pytest
+from beancount.core.number import MISSING
+from beancount.core.position import CostSpec
+
+from fava._structs import Balance
+from fava._structs import Note
+from fava._structs import Posting
+from fava._structs import Transaction
+from fava.beans import abc
+from fava.beans import create
+from fava.beans.funcs import hash_entry
+from fava.beans.helpers import replace
+from fava.beans.str import to_string
+from fava.core.charts import dumps
+from fava.core.charts import loads
+from fava.serialisation import _deserialise_posting
+from fava.serialisation import _serialise_posting
+from fava.serialisation import deserialise
+from fava.serialisation import InvalidAmountError
+from fava.serialisation import serialise
+
+if TYPE_CHECKING:  # pragma: no cover
+    from collections.abc import Sequence
+
+    from beancount.core.data import Meta
+
+    from fava.beans.abc import Directive
+
+    from .conftest import GetFavaLedger
+    from .conftest import SnapshotFunc
+
+
+def _entry(json_entry: object) -> Balance | Note | Transaction:
+    """Decode a JSON entry the way the JSON API does, for testing."""
+    return msgspec.convert(
+        json_entry,
+        type=Balance | Note | Transaction,
+    )
+
+
+def _posting(json_posting: object) -> Posting:
+    """Decode a JSON posting the way the JSON API does, for testing."""
+    return msgspec.convert(json_posting, type=Posting)
+
+
+def test_serialise_txn() -> None:
+    txn = create.transaction(
+        {},
+        dt.date(2017, 12, 12),
+        "*",
+        "Test3",
+        "asdfasd",
+        frozenset(["tag"]),
+        frozenset(["link"]),
+        [
+            create.posting("Assets:ETrade:Cash", "100 USD"),
+            create.posting("Assets:ETrade:GLD", "0 USD"),
+        ],
+    )
+    entry_hash = hash_entry(txn)
+
+    json_txn = {
+        "date": "2017-12-12",
+        "entry_hash": entry_hash,
+        "flag": "*",
+        "meta": {},
+        "narration": "asdfasd",
+        "tags": ["tag"],
+        "links": ["link"],
+        "payee": "Test3",
+        "t": "Transaction",
+        "postings": [
+            {"account": "Assets:ETrade:Cash", "amount": "100 USD"},
+            {"account": "Assets:ETrade:GLD", "amount": "0 USD"},
+        ],
+    }
+
+    serialised = loads(dumps(serialise(txn)))
+    assert serialised == json_txn
+
+    json_txn["payee"] = ""
+    txn = replace(txn, payee="")
+    json_txn["entry_hash"] = hash_entry(txn)
+    serialised = loads(dumps(serialise(txn)))
+    assert serialised == json_txn
+
+    txn = replace(txn, payee=None)
+    json_txn["entry_hash"] = hash_entry(txn)
+    serialised = loads(dumps(serialise(txn)))
+    assert serialised == json_txn
+
+
+def test_serialise_txn_missing_tolerances(get_ledger: GetFavaLedger) -> None:
+    """Non-str keys in beancount's inferred-tolerance metadata are dropped."""
+    # The errors ledger contains a transaction with a currency-less posting,
+    # for which Beancount stores the MISSING sentinel as a key of
+    # meta.__tolerances__.
+    ledger = get_ledger("errors")
+    txn = next(
+        txn
+        for txn in ledger.all_entries_by_type.Transaction
+        if MISSING
+        in (cast("dict[object, object]", txn.meta.get("__tolerances__", {})))
+    )
+
+    json_txn = loads(dumps(serialise(txn)))
+    assert isinstance(json_txn, dict)
+    assert json_txn["meta"]["__tolerances__"] == {"USD": "0.005"}
+
+
+def test_meta_decimal_and_amount_roundtrip() -> None:
+    """Decimal, Amount, and int metadata values roundtrip through JSON."""
+    number = Decimal("0.1234567891011121314151617")
+    amt = create.amount("10.10 USD")
+    txn = create.transaction(
+        {"number-value": number, "amount-value": amt, "lineno": 42},
+        dt.date(2017, 12, 12),
+        "*",
+        "Test3",
+        "asdfasd",
+        frozenset(),
+        frozenset(),
+        [
+            create.posting(
+                "Assets:ETrade:Cash",
+                "100 USD",
+                meta={
+                    "posting-number": number,
+                    "posting-amount": amt,
+                    "lineno": 1,
+                },
+            ),
+        ],
+    )
+
+    json_txn = loads(dumps(serialise(txn)))
+    assert isinstance(json_txn, dict)
+    assert json_txn["meta"] == {
+        "number-value": "0.1234567891011121314151617",
+        "amount-value": {
+            "number": "10.10",
+            "currency": "USD",
+        },
+        "lineno": 42,
+    }
+    assert json_txn["postings"][0]["meta"] == {
+        "posting-number": "0.1234567891011121314151617",
+        "posting-amount": {
+            "number": "10.10",
+            "currency": "USD",
+        },
+        "lineno": 1,
+    }
+
+    roundtripped = deserialise(_entry(json_txn))
+    assert isinstance(roundtripped, abc.Transaction)
+    assert roundtripped.meta["number-value"] == number
+    assert isinstance(roundtripped.meta["number-value"], Decimal)
+    assert roundtripped.meta["amount-value"] == amt
+    assert roundtripped.meta["lineno"] == 42
+    assert isinstance(roundtripped.meta["lineno"], int)
+    posting_meta = roundtripped.postings[0].meta
+    assert posting_meta is not None
+    assert posting_meta["posting-number"] == number
+    assert isinstance(posting_meta["posting-number"], Decimal)
+    assert posting_meta["posting-amount"] == amt
+    assert posting_meta["lineno"] == 1
+    assert isinstance(posting_meta["lineno"], int)
+
+
+def test_serialise_entry_types(
+    snapshot: SnapshotFunc,
+    load_doc_entries: Sequence[Directive],
+) -> None:
+    """
+    2017-12-11 open Assets:Cash USD "STRICT"
+    2017-12-13 balance Assets:Cash 1 USD
+    2017-12-14 balance Assets:Cash 1 ~ 1.0 USD
+    2017-12-16 document Assets:Cash "./tests/data/filename" #tag ^link
+    2017-12-12 event "event name" "event description"
+        bool-value: TRUE
+        string-value: "value"
+        account-value: Assets:Cash
+        amount-value: 10 USD
+        currency-value: USD
+        number-value: 10 + 10
+        date-value: 2022-12-12
+    2017-12-20 note Assets:Cash "This is some comment or note"
+    2017-12-21 pad Assets:Cash Assets:OtherCash
+    2017-12-22 close Assets:Cash
+
+    2018-12-15 commodity USD
+    2018-12-16 price USD 1 EUR
+    2012-12-12 custom "string" 1 EUR FALSE
+
+    2019-12-12 query "query name" "journal"
+    """
+    snapshot([serialise(entry) for entry in load_doc_entries], json=True)
+
+
+@pytest.mark.parametrize(
+    ("amount", "cost", "price", "amount_string", "meta"),
+    [
+        ("100 USD", None, None, "100 USD", None),
+        ("100 USD", None, None, "100 USD", {"someKey": "someValue"}),
+        (
+            "100 USD",
+            CostSpec(Decimal(10), None, "EUR", None, None, merge=False),
+            None,
+            "100 USD {10 EUR}",
+            None,
+        ),
+        (
+            "100 USD",
+            CostSpec(Decimal(10), None, "EUR", None, None, merge=False),
+            "11 EUR",
+            "100 USD {10 EUR} @ 11 EUR",
+            None,
+        ),
+        ("100 USD", None, "11 EUR", "100 USD @ 11 EUR", None),
+        (
+            "100 USD",
+            CostSpec(
+                MISSING,  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
+                None,
+                MISSING,  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
+                None,
+                None,
+                merge=False,
+            ),
+            None,
+            "100 USD {}",
+            None,
+        ),
+    ],
+)
+def test_serialise_posting(
+    amount: str,
+    cost: CostSpec | None,
+    price: str | None,
+    amount_string: str,
+    meta: Meta | None,
+) -> None:
+    pos = create.posting(
+        "Assets",
+        amount,
+        cost,  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
+        price,
+        flag=None,
+        meta=meta,
+    )
+    json: dict[str, object] = {"account": "Assets", "amount": amount_string}
+    if meta:
+        json["meta"] = meta
+    assert loads(dumps(_serialise_posting(pos))) == json
+    assert _deserialise_posting(_posting(json)) == pos
+
+
+@pytest.mark.parametrize(
+    ("amount_cost_price", "amount_string", "meta"),
+    [
+        (("100 USD", None, None), "10*10 USD", None),
+        (("130 USD", None, None), "100+50 - 20 USD", {"someKey": "someValue"}),
+        (("-140 USD", None, None), "-1400 / 10 USD", None),
+        (("10 USD", None, "1 EUR"), "10 USD @@ 10 EUR", None),
+        (
+            ("7 USD", None, "1.428571428571428571428571429 EUR"),
+            "7 USD @@ 10 EUR",
+            None,
+        ),
+        (("0 USD", None, "0 EUR"), "0 USD @@ 0 EUR", None),
+    ],
+)
+def test_deserialise_posting(
+    amount_cost_price: tuple[str, CostSpec | None, str | None],
+    amount_string: str,
+    meta: Meta | None,
+) -> None:
+    """Roundtrip is not possible here due to total price or calculation."""
+    amount, cost, price = amount_cost_price
+    pos = create.posting(
+        "Assets",
+        amount,
+        cost,  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
+        price,
+        flag=None,
+        meta=meta,
+    )
+    json: dict[str, object] = {"account": "Assets", "amount": amount_string}
+    if meta is not None:
+        json["meta"] = meta
+    assert _deserialise_posting(_posting(json)) == pos
+
+
+def test_deserialise_posting_invalid_amount() -> None:
+    with pytest.raises(InvalidAmountError):
+        _deserialise_posting(
+            _posting({"account": "Assets", "amount": "10 ////"})
+        )
+
+
+def test_deserialise_posting_and_format(snapshot: SnapshotFunc) -> None:
+    txn = create.transaction(
+        {},
+        dt.date(2017, 12, 12),
+        "*",
+        "Test3",
+        "asdfasd",
+        frozenset(["tag"]),
+        frozenset(["link"]),
+        [
+            _deserialise_posting(
+                _posting({"account": "Assets", "amount": "10"})
+            ),
+            _deserialise_posting(
+                _posting({"account": "Assets", "amount": "10 EUR @"})
+            ),
+        ],
+    )
+    snapshot(to_string(txn))
+
+
+def test_serialise_balance() -> None:
+    bal = create.balance(
+        meta={},
+        date=dt.date(2019, 9, 17),
+        account="Assets:ETrade:Cash",
+        amount=create.amount("0.1234567891011121314151617 CHF"),
+    )
+
+    entry_hash = hash_entry(bal)
+
+    json = {
+        "date": "2019-09-17",
+        "amount": {"currency": "CHF", "number": "0.1234567891011121314151617"},
+        "diff_amount": None,
+        "entry_hash": entry_hash,
+        "meta": {},
+        "tolerance": None,
+        "account": "Assets:ETrade:Cash",
+        "t": "Balance",
+    }
+
+    serialised = loads(dumps(serialise(bal)))
+
+    assert serialised == json
+
+
+def test_deserialise() -> None:
+    postings = [
+        {"account": "Assets:ETrade:Cash", "amount": "100 USD"},
+        {"account": "Assets:ETrade:GLD"},
+    ]
+    json_txn = {
+        "t": "Transaction",
+        "date": "2017-12-12",
+        "flag": "*",
+        "payee": "Test3",
+        "narration": "asdfasd",
+        "tags": ["tag"],
+        "links": ["link"],
+        "meta": {},
+        "postings": postings,
+    }
+
+    txn = create.transaction(
+        {},
+        dt.date(2017, 12, 12),
+        "*",
+        "Test3",
+        "asdfasd",
+        frozenset(["tag"]),
+        frozenset(["link"]),
+        [
+            create.posting("Assets:ETrade:Cash", "100 USD"),
+            replace(
+                create.posting("Assets:ETrade:GLD", "100 USD"),
+                units=MISSING,
+            ),
+        ],
+    )
+    assert deserialise(_entry(json_txn)) == txn
+
+    with pytest.raises(msgspec.ValidationError):
+        _entry({})
+
+    with pytest.raises(msgspec.ValidationError):
+        _entry({"t": "NoEntry"})
+
+
+def test_deserialise_balance() -> None:
+    json_bal = {
+        "t": "Balance",
+        "date": "2017-12-12",
+        "account": "Assets:ETrade:Cash",
+        "amount": {"number": "100", "currency": "USD"},
+        "meta": {},
+    }
+    bal = create.balance(
+        meta={},
+        date=dt.date(2017, 12, 12),
+        account="Assets:ETrade:Cash",
+        amount="100 USD",
+    )
+    assert deserialise(_entry(json_bal)) == bal
+
+
+def test_deserialise_note() -> None:
+    json_note = {
+        "t": "Note",
+        "date": "2017-12-12",
+        "account": "Assets:ETrade:Cash",
+        "comment": 'This is some comment or note""',
+        "meta": {},
+    }
+    note = create.note(
+        meta={},
+        date=dt.date(2017, 12, 12),
+        account="Assets:ETrade:Cash",
+        comment="This is some comment or note",
+    )
+    assert deserialise(_entry(json_note)) == note
+
+
+def test_deserialise_unknown() -> None:
+    json_custom = {
+        "t": "Custom",
+        "date": "2017-12-12",
+        "meta": {},
+    }
+    with pytest.raises(msgspec.ValidationError):
+        _entry(json_custom)

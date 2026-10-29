@@ -1,0 +1,114 @@
+import { deepEqual, equal, throws } from "node:assert/strict";
+import { test } from "node:test";
+
+import { get as store_get, writable } from "svelte/store";
+
+import {
+  derived_array,
+  derived_with_equality,
+  local_storage_synced_store,
+} from "../src/lib/store.ts";
+import { string } from "../src/lib/validation.ts";
+import { setup_jsdom } from "./dom.ts";
+
+test.beforeEach(setup_jsdom);
+
+test("derived store", () => {
+  const source = writable<string[]>([]);
+  const derived = derived_array(source, (s) => s);
+  let source_count = 0;
+  source.subscribe(() => {
+    source_count += 1;
+  });
+  let derived_count = 0;
+  derived.subscribe(() => {
+    derived_count += 1;
+  });
+  source.set([]);
+  source.set([]);
+  source.set(["a", "b"]);
+  source.set(["a", "b"]);
+  source.set(["a", "b"]);
+  equal(source_count, 6);
+  equal(derived_count, 2);
+});
+
+test("derived store with equality check", () => {
+  const source = writable({ a: 1, b: "x" });
+  const derived = derived_with_equality(
+    source,
+    (s) => ({ a: s.a }),
+    { a: 0 },
+    (x, y) => x.a === y.a,
+  );
+  let derived_count = 0;
+  derived.subscribe(() => {
+    derived_count += 1;
+  });
+  source.set({ a: 1, b: "y" });
+  source.set({ a: 1, b: "z" });
+  source.set({ a: 2, b: "z" });
+  equal(derived_count, 2);
+  equal(store_get(derived).a, 2);
+});
+
+test("localStorage-synced stores", () => {
+  const a = local_storage_synced_store("test-store", string, () => "default");
+  equal(a.key, "fava-test-store");
+  deepEqual(a.values(), []);
+
+  // Getting the value will temporarily attach a subscriber (and unsubscribe as well).
+  localStorage.removeItem(a.key);
+  equal(store_get(a), "default");
+
+  localStorage.setItem(a.key, "invalid-non-json-stringified");
+  equal(store_get(a), "default");
+
+  localStorage.setItem(a.key, JSON.stringify("value"));
+  equal(store_get(a), "value");
+
+  a.set("another-value");
+  equal(store_get(a), "another-value");
+  equal(localStorage.getItem(a.key), JSON.stringify("another-value"));
+
+  a.update(() => "a-value");
+  equal(store_get(a), "a-value");
+  equal(localStorage.getItem(a.key), JSON.stringify("a-value"));
+
+  const seen_values: string[] = [];
+  const unsubscribe = a.subscribe((v) => {
+    seen_values.push(v);
+  });
+  window.dispatchEvent(
+    new StorageEvent("storage", {
+      key: a.key,
+      newValue: JSON.stringify("event-value-different-storage-area"),
+      storageArea: sessionStorage,
+    }),
+  );
+  window.dispatchEvent(
+    new StorageEvent("storage", {
+      key: "fava-wrong-key",
+      newValue: JSON.stringify("event-value-wrong-key"),
+      storageArea: localStorage,
+    }),
+  );
+  window.dispatchEvent(
+    new StorageEvent("storage", {
+      key: a.key,
+      newValue: JSON.stringify("event-value"),
+      storageArea: localStorage,
+    }),
+  );
+  unsubscribe();
+  deepEqual(seen_values, ["a-value", "event-value"]);
+
+  throws(() => {
+    // The prefix is added automatically.
+    local_storage_synced_store("fava-test-store", string, () => "value");
+  });
+  throws(() => {
+    // No duplicate stores
+    local_storage_synced_store("test-store", string, () => "value");
+  });
+});

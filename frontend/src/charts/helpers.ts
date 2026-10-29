@@ -1,0 +1,117 @@
+import { hcl } from "d3-color";
+import { scaleOrdinal } from "d3-scale";
+import { derived } from "svelte/store";
+
+import { date_format } from "../stores/format.ts";
+import { accounts, currencies_sorted } from "../stores/index.ts";
+import { operating_currency } from "../stores/options.ts";
+import { current_url } from "../stores/url.ts";
+
+/**
+ * Get an URL to set the time filter to the given date (formatted according to the current interval).
+ */
+export const url_for_time_filter = derived(
+  [current_url, date_format],
+  ([$current_url, $date_format]) =>
+    (date: Date): string => {
+      const url = new URL($current_url);
+      url.searchParams.set("time", $date_format(date));
+      return url.toString();
+    },
+);
+
+/**
+ * Include zero in the extent.
+ *
+ * For convenience this also turns a empty extent into [0,1].
+ */
+export function include_zero([from, to]:
+  | [number, number]
+  | [undefined, undefined]): [number, number] {
+  if (from === undefined) {
+    return [0, 1];
+  }
+  return [Math.min(0, from), Math.max(0, to)];
+}
+
+/**
+ * Pad the extent by a factor of 0.05.
+ *
+ * For convenience this also turns a empty extent into [0,1].
+ */
+export function pad_extent([from, to]:
+  | [number, number]
+  | [undefined, undefined]): [number, number] {
+  if (from === undefined) {
+    return [0, 1];
+  }
+  const diff = to - from;
+  return [from - diff * 0.03, to + diff * 0.03];
+}
+
+/**
+ * Filter ticks to have them not overlap.
+ * @param domain - The domain of values to filter.
+ * @param count - The number of ticks that should be returned.
+ */
+export function filter_ticks(
+  domain: readonly string[],
+  count: number,
+): readonly string[] {
+  if (domain.length <= count) {
+    return domain;
+  }
+  const showIndices = Math.ceil(domain.length / count);
+  return domain.filter((_d, i) => i % showIndices === 0);
+}
+
+/**
+ * Generate an array of colors.
+ *
+ * Uses the HCL color space in an attempt to generate colours that are
+ * to be perceived to be of the same brightness.
+ * @param count - the number of colors to generate.
+ * @param chroma - optional, the chroma channel value.
+ * @param luminance - optional, the luminance channel value.
+ */
+export function hcl_color_range(
+  count: number,
+  chroma = 45,
+  luminance = 70,
+): readonly string[] {
+  const offset = 270;
+  const delta = 360 / count;
+  const colors = [...Array(count).keys()].map((index) => {
+    const hue = (index * delta + offset) % 360;
+    return hcl(hue, chroma, luminance);
+  });
+  return colors.map((c) => c.toString());
+}
+
+export const colors10 = hcl_color_range(10);
+export const colors15 = hcl_color_range(15, 30, 80);
+
+/*
+ * The color scales for the charts.
+ *
+ * The scales for treemap and sunburst charts will be initialised with all
+ * accounts on page init and currencies with all commodities.
+ */
+export const scatterplot_scale = scaleOrdinal(colors10);
+
+export const treemap_scale = derived(accounts, ($accounts) =>
+  scaleOrdinal(colors15).domain($accounts),
+);
+
+export const sunburst_scale = derived(accounts, ($accounts) =>
+  scaleOrdinal(colors10).domain($accounts),
+);
+
+export const currencies_scale = derived(
+  [operating_currency, currencies_sorted],
+  ([$operating_currency, $currencies_sorted]) =>
+    scaleOrdinal(colors10).domain([
+      ...$operating_currency,
+      ...$currencies_sorted,
+    ]),
+);

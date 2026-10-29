@@ -1,0 +1,711 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Fava\n"
+"Language: sk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: POEditor.com\n"
+
+#: frontend/src/app.ts:83
+msgid "File change detected. Click to reload."
+msgstr "Súbor bol zmenený. Kliknutie obnoví stránku."
+
+#: frontend/src/charts/ChartSwitcher.svelte:35
+#: frontend/src/reports/import/Extract.svelte:100
+msgid "Previous"
+msgstr ""
+
+#: frontend/src/charts/ChartSwitcher.svelte:42
+#: frontend/src/reports/import/Extract.svelte:105
+msgid "Next"
+msgstr ""
+
+#: frontend/src/charts/ConversionAndInterval.svelte:19
+msgid "At Cost"
+msgstr ""
+
+#: frontend/src/charts/ConversionAndInterval.svelte:21
+msgid "At Market Value"
+msgstr ""
+
+#: frontend/src/charts/ConversionAndInterval.svelte:23
+#: frontend/src/reports/journal/JournalHeaders.svelte:53
+msgid "Units"
+msgstr ""
+
+#: frontend/src/charts/ConversionAndInterval.svelte:25
+#, python-format
+msgid "Converted to %(currency)s"
+msgstr ""
+
+#: frontend/src/charts/HierarchyContainer.svelte:33
+msgid "Chart is empty."
+msgstr ""
+
+#: frontend/src/editor/DeleteButton.svelte:12
+msgid "Deleting…"
+msgstr ""
+
+#: frontend/src/editor/DeleteButton.svelte:12
+#: frontend/src/reports/import/FileList.svelte:71
+msgid "Delete"
+msgstr ""
+
+#: frontend/src/editor/SaveButton.svelte:14
+#, fuzzy
+#| msgid "Saving..."
+msgid "Saving…"
+msgstr "Ukladá sa..."
+
+#: frontend/src/editor/SaveButton.svelte:14
+#: frontend/src/editor/SliceEditor.svelte:156
+#: frontend/src/modals/AddEntry.svelte:67
+#: frontend/src/reports/import/Extract.svelte:115
+msgid "Save"
+msgstr "Uložiť"
+
+#: frontend/src/editor/SliceEditor.svelte:138
+msgid "Duplicate"
+msgstr ""
+
+#: frontend/src/editor/SliceEditor.svelte:144
+msgid "reload"
+msgstr ""
+
+#: frontend/src/editor/SliceEditor.svelte:152
+#: frontend/src/modals/AddEntry.svelte:46
+msgid "Add"
+msgstr ""
+
+#: frontend/src/entry-forms/AccountInput.svelte:24
+msgid "Should be one of the declared accounts"
+msgstr ""
+
+#: frontend/src/entry-forms/AccountInput.svelte:39
+#: frontend/src/modals/DocumentUpload.svelte:192
+#: frontend/src/modals/EntryContextBalances.svelte:31
+#: frontend/src/reports/holdings/Holdings.svelte:25
+#: frontend/src/reports/holdings/Holdings.svelte:29
+#: frontend/src/reports/statistics/UpdateActivity.svelte:32
+#: frontend/src/sidebar/FilterForm.svelte:52
+msgid "Account"
+msgstr "Účet"
+
+#: frontend/src/entry-forms/AddMetadataButton.svelte:19
+#: frontend/src/entry-forms/EntryMetadata.svelte:53
+#: frontend/src/entry-forms/EntryMetadata.svelte:54
+msgid "Add metadata"
+msgstr "Pridať metadáta"
+
+#: frontend/src/entry-forms/AmountInput.svelte:36
+msgid "Amount"
+msgstr "Suma"
+
+#: frontend/src/entry-forms/Balance.svelte:28
+#: frontend/src/modals/AddEntry.svelte:20
+#: frontend/src/reports/journal/JournalHeaders.svelte:66
+#: frontend/src/reports/statistics/UpdateActivity.svelte:39
+msgid "Balance"
+msgstr "Zostatok"
+
+#: frontend/src/entry-forms/Balance.svelte:44
+msgid "Number"
+msgstr "Číslo"
+
+#: frontend/src/entry-forms/Balance.svelte:55
+#: frontend/src/reports/holdings/Holdings.svelte:35
+#: frontend/src/reports/holdings/Holdings.svelte:39
+msgid "Currency"
+msgstr "Mena"
+
+#: frontend/src/entry-forms/EntryMetadata.svelte:29
+#: frontend/src/reports/options/OptionsTable.svelte:14
+msgid "Key"
+msgstr "Kľúč"
+
+#: frontend/src/entry-forms/EntryMetadata.svelte:40
+#: frontend/src/reports/options/OptionsTable.svelte:15
+msgid "Value"
+msgstr "Hodnota"
+
+#: frontend/src/entry-forms/Note.svelte:27
+#: frontend/src/modals/AddEntry.svelte:21
+msgid "Note"
+msgstr "Poznámka"
+
+#: frontend/src/entry-forms/Transaction.svelte:83
+#: frontend/src/entry-forms/Transaction.svelte:85
+#: frontend/src/reports/journal/JournalHeaders.svelte:51
+msgid "Payee"
+msgstr "Príjemca"
+
+#: frontend/src/entry-forms/Transaction.svelte:96
+#: frontend/src/entry-forms/Transaction.svelte:98
+#: frontend/src/reports/journal/JournalHeaders.svelte:51
+msgid "Narration"
+msgstr "Popis"
+
+#: frontend/src/entry-forms/Transaction.svelte:126
+#: frontend/src/reports/journal/JournalFilters.svelte:44
+msgid "Postings"
+msgstr "Položky"
+
+#: frontend/src/lib/interval.ts:28 src/fava/util/date.py:158
+msgid "Yearly"
+msgstr "Ročne"
+
+#: frontend/src/lib/interval.ts:29 src/fava/util/date.py:274
+msgid "Per Fiscal Year"
+msgstr ""
+
+#: frontend/src/lib/interval.ts:30 src/fava/util/date.py:178
+msgid "Quarterly"
+msgstr "Kvartálne"
+
+#: frontend/src/lib/interval.ts:31 src/fava/util/date.py:311
+msgid "Per Fiscal Quarter"
+msgstr ""
+
+#: frontend/src/lib/interval.ts:32 src/fava/util/date.py:199
+msgid "Monthly"
+msgstr "Mesačne"
+
+#: frontend/src/lib/interval.ts:33 src/fava/util/date.py:220
+msgid "Weekly"
+msgstr "Týždenne"
+
+#: frontend/src/lib/interval.ts:34 src/fava/util/date.py:246
+msgid "Daily"
+msgstr "Denne"
+
+#: frontend/src/modals/AddEntry.svelte:19
+msgid "Transaction"
+msgstr ""
+
+#: frontend/src/modals/AddEntry.svelte:65
+msgid "continue"
+msgstr ""
+
+#: frontend/src/modals/Context.svelte:37 frontend/src/modals/Context.svelte:41
+#: frontend/src/modals/EntryContextBalances.svelte:25
+msgid "Context"
+msgstr "Kontext"
+
+#: frontend/src/modals/DocumentUpload.svelte:167
+msgid "Upload file(s)"
+msgstr "Nahrať súbor-y"
+
+#: frontend/src/modals/DocumentUpload.svelte:169
+#, fuzzy
+#| msgid "File"
+msgid "Files"
+msgstr "Súbor"
+
+#: frontend/src/modals/DocumentUpload.svelte:184
+msgid "Documents folder"
+msgstr ""
+
+#: frontend/src/modals/DocumentUpload.svelte:195
+#: frontend/src/reports/import/ImportFileUpload.svelte:36
+msgid "Upload"
+msgstr "Nahrať"
+
+#: frontend/src/modals/EntryContextBalances.svelte:32
+msgid "Balances before entry"
+msgstr "Zostatky pred zápisom"
+
+#: frontend/src/modals/EntryContextBalances.svelte:34
+msgid "Balances after entry"
+msgstr "Zostatky po zápise"
+
+#: frontend/src/modals/EntryContextLocation.svelte:14
+msgid "Location"
+msgstr "Poloha"
+
+#: frontend/src/modals/Export.svelte:13
+#: frontend/src/sidebar/AsideContents.svelte:78
+msgid "Export"
+msgstr "Exportovať"
+
+#: frontend/src/modals/Export.svelte:15
+msgid "Download currently filtered entries as a Beancount file"
+msgstr "Stiahnuť aktuálne filtrované zápisy ako Beancount súbor"
+
+#: frontend/src/reports/errors/Errors.svelte:24
+#: frontend/src/reports/route.ts:102
+msgid "Error"
+msgstr "Chyba"
+
+#: frontend/src/reports/accounts/AccountReport.svelte:54
+msgid "Journal of all entries for this Account and Sub-Accounts"
+msgstr ""
+
+#: frontend/src/reports/accounts/AccountReport.svelte:56
+#: frontend/src/reports/accounts/AccountReport.svelte:59
+#, fuzzy
+msgid "Account Journal"
+msgstr "Register účtu"
+
+#: frontend/src/reports/accounts/AccountReport.svelte:65
+#: frontend/src/reports/accounts/AccountReport.svelte:68
+#: src/fava/json_api.py:804
+msgid "Changes"
+msgstr "Zmeny"
+
+#: frontend/src/reports/accounts/AccountReport.svelte:74
+#: frontend/src/reports/accounts/AccountReport.svelte:77
+msgid "Balances"
+msgstr "Zostatky"
+
+#: frontend/src/reports/commodities/CommodityTable.svelte:18
+#: frontend/src/reports/documents/Table.svelte:26
+#: frontend/src/reports/events/EventTable.svelte:14
+#: frontend/src/reports/journal/JournalHeaders.svelte:29
+msgid "Date"
+msgstr "Dátum"
+
+#: frontend/src/reports/commodities/CommodityTable.svelte:19
+#: frontend/src/reports/journal/JournalHeaders.svelte:66
+#: frontend/src/reports/journal/JournalHeaders.svelte:69
+msgid "Price"
+msgstr "Cena"
+
+#: frontend/src/reports/commodities/index.ts:32
+#: frontend/src/sidebar/AsideContents.svelte:49
+msgid "Commodities"
+msgstr "Komodity"
+
+#: frontend/src/reports/documents/Documents.svelte:75
+msgid "Move or rename document"
+msgstr ""
+
+#: frontend/src/reports/documents/Documents.svelte:80
+#: frontend/src/reports/import/FileList.svelte:108
+msgid "Move"
+msgstr ""
+
+#: frontend/src/reports/documents/Table.svelte:27
+msgid "Name"
+msgstr ""
+
+#: frontend/src/reports/documents/index.ts:19
+#: frontend/src/sidebar/AsideContents.svelte:50
+msgid "Documents"
+msgstr ""
+
+#: frontend/src/reports/editor/EditorMenu.svelte:42
+#: frontend/src/reports/errors/Errors.svelte:22
+msgid "File"
+msgstr "Súbor"
+
+#: frontend/src/reports/editor/EditorMenu.svelte:52
+msgid "Edit"
+msgstr "Upraviť"
+
+#: frontend/src/reports/editor/EditorMenu.svelte:56
+msgid "Align Amounts"
+msgstr "Zarovnať hodnoty"
+
+#: frontend/src/reports/editor/EditorMenu.svelte:62
+msgid "Toggle Comment (selection)"
+msgstr "Prepnúť kommentár (výber)"
+
+#: frontend/src/reports/editor/EditorMenu.svelte:68
+msgid "Open all folds"
+msgstr "Rozšíriť všetko"
+
+#: frontend/src/reports/editor/EditorMenu.svelte:74
+msgid "Close all folds"
+msgstr "Zhrnúť všetko"
+
+#: frontend/src/reports/editor/EditorMenu.svelte:81
+#: frontend/src/reports/options/index.ts:15
+#: frontend/src/sidebar/AsideContents.svelte:80
+msgid "Options"
+msgstr "Možnosti"
+
+#: frontend/src/reports/editor/index.ts:33
+#: frontend/src/sidebar/AsideContents.svelte:60
+msgid "Editor"
+msgstr "Editor"
+
+#: frontend/src/reports/errors/Errors.svelte:23
+#: frontend/src/reports/import/Extract.svelte:121
+msgid "Line"
+msgstr "Riadok"
+
+#: frontend/src/reports/errors/Errors.svelte:49
+#, python-format
+msgid "Show source %(file)s:%(lineno)s"
+msgstr "Ukázať zdroj %(file)s:%(lineno)s"
+
+#: frontend/src/reports/errors/Errors.svelte:77
+msgid "No errors."
+msgstr "Žiadne chyby."
+
+#: frontend/src/reports/errors/index.ts:6
+#: frontend/src/sidebar/AsideContents.svelte:73
+msgid "Errors"
+msgstr "Chyby"
+
+#: frontend/src/reports/events/EventTable.svelte:15
+msgid "Description"
+msgstr "Popis"
+
+#: frontend/src/reports/events/Events.svelte:16
+#: frontend/src/reports/events/index.ts:17
+#: frontend/src/sidebar/AsideContents.svelte:53
+msgid "Events"
+msgstr "Udalosti"
+
+#: frontend/src/reports/events/Events.svelte:31
+#, python-format
+msgid "Event: %(type)s"
+msgstr "Udalosť: %(type)s"
+
+#: frontend/src/reports/events/Events.svelte:37
+#, fuzzy
+#| msgid "Events"
+msgid "No events."
+msgstr "Udalosti"
+
+#: frontend/src/reports/help/Help.svelte:11
+#, fuzzy
+msgid "Help pages"
+msgstr "Pomocné stránky"
+
+#: frontend/src/reports/help/index.ts:35
+#: frontend/src/sidebar/AsideContents.svelte:81
+msgid "Help"
+msgstr "Pomoc"
+
+#: frontend/src/reports/holdings/Holdings.svelte:18
+#: frontend/src/reports/holdings/Holdings.svelte:20
+#: frontend/src/reports/holdings/index.ts:92
+#: frontend/src/sidebar/AsideContents.svelte:48
+#, fuzzy
+msgid "Holdings"
+msgstr "Vlastníctvo"
+
+#: frontend/src/reports/holdings/Holdings.svelte:25
+#: frontend/src/reports/holdings/Holdings.svelte:28
+#: frontend/src/reports/holdings/Holdings.svelte:35
+#: frontend/src/reports/holdings/Holdings.svelte:38
+#: frontend/src/reports/holdings/Holdings.svelte:45
+#: frontend/src/reports/holdings/Holdings.svelte:48
+msgid "Holdings by"
+msgstr "Majetok podľa"
+
+#: frontend/src/reports/holdings/Holdings.svelte:45
+#: frontend/src/reports/holdings/Holdings.svelte:49
+msgid "Cost currency"
+msgstr "Mena výdavku"
+
+#: frontend/src/reports/holdings/Holdings.svelte:56
+#: frontend/src/reports/query/index.ts:16
+#: frontend/src/reports/statistics/Statistics.svelte:24
+#: frontend/src/sidebar/AsideContents.svelte:34
+#, fuzzy
+msgid "Query"
+msgstr "Dotaz"
+
+#: frontend/src/reports/import/Extract.svelte:58
+#: frontend/src/reports/import/index.ts:70
+#: frontend/src/sidebar/AsideContents.svelte:77
+msgid "Import"
+msgstr "Importovať"
+
+#: frontend/src/reports/import/Extract.svelte:76
+msgid "ignore duplicate"
+msgstr ""
+
+#: frontend/src/reports/import/Extract.svelte:120
+msgid "Source"
+msgstr "Zdroj"
+
+#: frontend/src/reports/import/FileList.svelte:44
+msgid "Delete this file?"
+msgstr ""
+
+#: frontend/src/reports/import/FileList.svelte:121
+msgid "Continue"
+msgstr ""
+
+#: frontend/src/reports/import/FileList.svelte:121
+msgid "Extract"
+msgstr "Extraktovať"
+
+#: frontend/src/reports/import/FileList.svelte:130
+msgid "Clear"
+msgstr ""
+
+#: frontend/src/reports/import/Import.svelte:146
+msgid "No files were found for import."
+msgstr ""
+
+#: frontend/src/reports/import/Import.svelte:149
+msgid "Importable Files"
+msgstr ""
+
+#: frontend/src/reports/import/Import.svelte:161
+msgid "Non-importable Files"
+msgstr ""
+
+#: frontend/src/reports/import/ImportFileUpload.svelte:34
+msgid "Upload files for import"
+msgstr ""
+
+#: frontend/src/reports/journal/JournalFilters.svelte:8
+#, python-format
+msgid "Toggle %(type)s entries"
+msgstr ""
+
+#: frontend/src/reports/journal/JournalFilters.svelte:25
+msgid "Cleared transactions"
+msgstr "Vyriešené transakcie"
+
+#: frontend/src/reports/journal/JournalFilters.svelte:26
+msgid "Pending transactions"
+msgstr "Nevyriešené transakcie"
+
+#: frontend/src/reports/journal/JournalFilters.svelte:27
+msgid "Other transactions"
+msgstr "Ostatné transakcie"
+
+#: frontend/src/reports/journal/JournalFilters.svelte:34
+msgid "Documents with a #discovered tag"
+msgstr "Dokumenty s tagom #discovered (objavené)"
+
+#: frontend/src/reports/journal/JournalFilters.svelte:38
+msgid "Documents with a #linked tag"
+msgstr "Dokumenty s tagom #linked"
+
+#: frontend/src/reports/journal/JournalFilters.svelte:42
+msgid "Budget entries"
+msgstr "Zápisý rozpočtov"
+
+#: frontend/src/reports/journal/JournalFilters.svelte:43
+msgid "Metadata"
+msgstr "Metadáta"
+
+#: frontend/src/reports/journal/JournalFilters.svelte:43
+msgid "Toggle metadata"
+msgstr ""
+
+#: frontend/src/reports/journal/JournalFilters.svelte:44
+msgid "Toggle postings"
+msgstr ""
+
+#: frontend/src/reports/journal/JournalHeaders.svelte:40
+#, fuzzy
+msgid "F"
+msgstr "V"
+
+#: frontend/src/reports/journal/JournalHeaders.svelte:64
+#: frontend/src/reports/journal/JournalHeaders.svelte:68
+msgid "Cost"
+msgstr "Výdavok"
+
+#: frontend/src/reports/journal/JournalHeaders.svelte:64
+msgid "Change"
+msgstr "Zmena"
+
+#: frontend/src/reports/journal/index.ts:58
+#: frontend/src/sidebar/AsideContents.svelte:33
+msgid "Journal"
+msgstr "Účtovná kniha"
+
+#: frontend/src/reports/options/Options.svelte:13
+msgid "Color scheme"
+msgstr ""
+
+#: frontend/src/reports/options/Options.svelte:20
+msgid "Fava options"
+msgstr "Fava možnosti"
+
+#: frontend/src/reports/options/Options.svelte:21
+msgid "help"
+msgstr "pomoc"
+
+#: frontend/src/reports/options/Options.svelte:25
+msgid "Beancount options"
+msgstr "Beancount možnosti"
+
+#: frontend/src/reports/query/QueryEditor.svelte:21
+#, fuzzy
+#| msgid "...enter a BQL query. 'help' to list available commands."
+msgid "…enter a BQL query. 'help' to list available commands."
+msgstr "...zadajte BQL dotaz. 'help' zobrazí všetky dostupné príkazy."
+
+#: frontend/src/reports/query/QueryEditor.svelte:40
+msgid "Submit"
+msgstr "Potvrdiť"
+
+#: frontend/src/reports/query/QueryLinks.svelte:21
+msgid "Download as"
+msgstr "Stiahnuť ako"
+
+#: frontend/src/reports/statistics/EntriesByType.svelte:14
+msgid "Type"
+msgstr "Typ"
+
+#: frontend/src/reports/statistics/EntriesByType.svelte:15
+msgid "# Entries"
+msgstr "Počet zápisov"
+
+#: frontend/src/reports/statistics/EntriesByType.svelte:41
+msgid "Total"
+msgstr "Súhrn"
+
+#: frontend/src/reports/statistics/Statistics.svelte:22
+msgid "Postings per Account"
+msgstr "Položky na účte"
+
+#: frontend/src/reports/statistics/Statistics.svelte:32
+msgid "Update Activity"
+msgstr "Aktualizovať aktivitu"
+
+#: frontend/src/reports/statistics/Statistics.svelte:35
+msgid ""
+"Click to copy balance directives for accounts (except green ones) to the "
+"clipboard."
+msgstr ""
+"Kliknutie skopíruje vyrovnávacie príkazy pre účty (okrem účtov oznčených "
+"zelenou farbou)."
+
+#: frontend/src/reports/statistics/Statistics.svelte:40
+msgid "Copy balance directives"
+msgstr "Kopírovať vyrovnávacie príkazy"
+
+#: frontend/src/reports/statistics/Statistics.svelte:47
+msgid "Entries per Type"
+msgstr "Zápisy podľa typu"
+
+#: frontend/src/reports/statistics/UpdateActivity.svelte:36
+msgid "Last Entry"
+msgstr "Posledný zápis"
+
+#: frontend/src/reports/statistics/index.ts:37
+#: frontend/src/sidebar/AsideContents.svelte:57
+msgid "Statistics"
+msgstr "Štatistiky"
+
+#: frontend/src/reports/tree_reports/index.ts:38
+#: frontend/src/sidebar/AsideContents.svelte:30
+msgid "Income Statement"
+msgstr "Výkaz ziskov a strát"
+
+#: frontend/src/reports/tree_reports/index.ts:49
+#: frontend/src/sidebar/AsideContents.svelte:31
+msgid "Balance Sheet"
+msgstr "Súvaha"
+
+#: frontend/src/reports/tree_reports/index.ts:63
+#: frontend/src/sidebar/AsideContents.svelte:32
+#, fuzzy
+msgid "Trial Balance"
+msgstr "Hrubá súvaha"
+
+#: frontend/src/sidebar/AccountSelector.svelte:24
+msgid "Go to account"
+msgstr ""
+
+#: frontend/src/sidebar/AsideContents.svelte:64
+msgid "Add Journal Entry"
+msgstr ""
+
+#: frontend/src/sidebar/AsideContents.svelte:85
+msgid "Show keyboard shortcuts"
+msgstr ""
+
+#: frontend/src/sidebar/FilterForm.svelte:41
+msgid "Time"
+msgstr "Čas"
+
+#: frontend/src/sidebar/FilterForm.svelte:63
+#, fuzzy
+#| msgid "Filter by tag, payee, ..."
+msgid "Filter by tag, payee, …"
+msgstr "Filtrovať podľa tagu, príjemcu, ..."
+
+#: frontend/src/stores/accounts.ts:113 src/fava/json_api.py:702
+#: src/fava/json_api.py:723
+msgid "Net Profit"
+msgstr "Čistý zisk"
+
+#: frontend/src/stores/chart.ts:26
+msgid "Treemap"
+msgstr ""
+
+#: frontend/src/stores/chart.ts:27
+msgid "Sunburst"
+msgstr ""
+
+#: frontend/src/stores/chart.ts:28
+msgid "Icicle"
+msgstr ""
+
+#: frontend/src/stores/chart.ts:41
+msgid "Line chart"
+msgstr ""
+
+#: frontend/src/stores/chart.ts:42
+msgid "Area chart"
+msgstr ""
+
+#: frontend/src/stores/chart.ts:55
+msgid "Stacked Bars"
+msgstr ""
+
+#: frontend/src/stores/chart.ts:56
+msgid "Single Bars"
+msgstr ""
+
+#: frontend/src/stores/color_scheme.ts:15
+msgid "System"
+msgstr ""
+
+#: frontend/src/stores/color_scheme.ts:16
+msgid "Dark"
+msgstr ""
+
+#: frontend/src/stores/color_scheme.ts:17
+msgid "Light"
+msgstr ""
+
+#: frontend/src/tree-table/AccountCellHeader.svelte:23
+msgid ""
+"Hold Shift while clicking to expand all children.\n"
+"Hold Ctrl or Cmd while clicking to expand one level."
+msgstr ""
+"Držte Shift počas kliknutia na rožšírenie všetkých podpodložiek. Držte Ctrl "
+"alebo Cmd počas kliknutia na rožirenie jedného stupňa."
+
+#: frontend/src/tree-table/AccountCellHeader.svelte:34
+msgid "Expand all accounts"
+msgstr "Rozšíriť všetky účty"
+
+#: frontend/src/tree-table/AccountCellHeader.svelte:39
+msgid "Expand all"
+msgstr "Rozšíriť všetko"
+
+#: frontend/src/tree-table/TreeTable.svelte:41
+msgid "Other"
+msgstr ""
+
+#: src/fava/internal_api.py:174
+msgid "Account Balance"
+msgstr ""
+
+#: src/fava/internal_api.py:225
+msgid "Net Worth"
+msgstr ""
+
+#: src/fava/json_api.py:709
+msgid "Income"
+msgstr "Príjem"
+
+#: src/fava/json_api.py:716
+msgid "Expenses"
+msgstr "Výdavky"

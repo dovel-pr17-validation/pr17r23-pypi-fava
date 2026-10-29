@@ -1,0 +1,84 @@
+<script lang="ts">
+  import { save_entries } from "../api/index.ts";
+  import {
+    Balance,
+    type EditableEntry,
+    Note,
+    Transaction,
+  } from "../entries/index.ts";
+  import Entry from "../entry-forms/Entry.svelte";
+  import { today_as_string } from "../format.ts";
+  import { _ } from "../i18n.ts";
+  import { router } from "../router.ts";
+  import { add_entry_continue } from "../stores/editor.ts";
+  import { hash } from "../stores/url.ts";
+  import ModalBase from "./ModalBase.svelte";
+
+  /** The entry types which have support adding in the modal. */
+  const entryTypes = [
+    [Transaction, _("Transaction")],
+    [Balance, _("Balance")],
+    [Note, _("Note")],
+  ] as const;
+
+  // For the first entry to be added, use today as the default date.
+  let entry = $state.raw<EditableEntry>(Transaction.empty(today_as_string()));
+
+  async function submit(event: SubmitEvent) {
+    event.preventDefault();
+    await save_entries([entry]);
+    const added_entry_date = entry.date;
+    // Reuse the date of the entry that was just added.
+    // @ts-expect-error all these entries have that static method, but TS is not able to determine that
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+    entry = entry.constructor.empty(added_entry_date);
+    if (!$add_entry_continue) {
+      router.close_overlay();
+    }
+  }
+
+  let shown = $derived($hash === "add-transaction");
+</script>
+
+<ModalBase {shown} focus="input[autocomplete=off]">
+  <form onsubmit={submit} class="flex-column">
+    <h3>
+      {_("Add")}
+      {#each entryTypes as [Cls, displayName] (displayName)}
+        <button
+          type="button"
+          class:muted={!(entry instanceof Cls)}
+          onclick={() => {
+            // When switching between entry types, keep the date.
+            entry = Cls.empty(entry.date);
+          }}
+        >
+          {displayName}
+        </button>
+      {/each}
+    </h3>
+    <Entry bind:entry />
+    <div class="flex-row">
+      <span class="spacer"></span>
+      <label>
+        <input type="checkbox" bind:checked={$add_entry_continue} />
+        <span>{_("continue")}</span>
+      </label>
+      <button type="submit">{_("Save")}</button>
+    </div>
+  </form>
+</ModalBase>
+
+<style>
+  h3 {
+    margin: 0;
+
+    button {
+      margin-left: 0.25em;
+    }
+  }
+
+  label span {
+    margin-right: 1rem;
+  }
+</style>

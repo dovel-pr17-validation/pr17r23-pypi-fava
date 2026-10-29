@@ -1,0 +1,62 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import beanquery
+import pytest
+from beancount.core.display_context import DisplayContext
+from beanquery.numberify import numberify_results
+
+from fava.util import excel
+
+if TYPE_CHECKING:  # pragma: no cover
+    from beanquery import Column
+
+    from fava.core import FavaLedger
+
+
+def _run_query(
+    ledger: FavaLedger, query: str
+) -> tuple[list[Column], list[tuple[object, ...]]]:
+    conn = beanquery.connect(
+        "beancount:",
+        entries=ledger.all_entries,
+        options=ledger.options,
+        errors=ledger.errors,
+    )
+    curs = conn.execute(query)
+    rrows = curs.fetchall()
+    rtypes = curs.description
+    dcontext = ledger.options["dcontext"]
+    assert isinstance(dcontext, DisplayContext)
+    dformat = dcontext.build()
+    rtypes, rrows = numberify_results(rtypes, rrows, dformat)
+    return rtypes, rrows
+
+
+def test_to_csv(example_ledger: FavaLedger) -> None:
+    types, rows = _run_query(example_ledger, "balances")
+    assert types
+    assert rows
+    assert excel.to_csv(types, rows)
+    types, rows = _run_query(example_ledger, "select account, tags, date, day")
+    assert types
+    assert rows
+    assert excel.to_csv(types, rows)
+
+
+@pytest.mark.skipif(not excel.HAVE_EXCEL, reason="pyexcel not installed")
+def test_export_set_column(example_ledger: FavaLedger) -> None:
+    types, _ = _run_query(example_ledger, "select tags")
+    rows = [(frozenset(),), (frozenset({"food"}),)]
+
+    assert excel.to_csv(types, rows).getvalue() == b'tags\r\n""\r\nfood\r\n'
+    assert excel.to_excel(types, rows, "xlsx", "select tags").read(2) == b"PK"
+
+
+@pytest.mark.skipif(not excel.HAVE_EXCEL, reason="pyexcel not installed")
+def test_to_excel(example_ledger: FavaLedger) -> None:
+    types, rows = _run_query(example_ledger, "balances")
+    assert types
+    assert rows
+    assert excel.to_excel(types, rows, "ods", "balances")

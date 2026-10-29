@@ -1,0 +1,154 @@
+<script lang="ts">
+  import { extent, max, min } from "d3-array";
+  import { axisBottom, axisLeft } from "d3-axis";
+  import { pathRound } from "d3-path";
+  import { quadtree } from "d3-quadtree";
+  import { scaleLinear, scaleUtc } from "d3-scale";
+  import { area, curveStepAfter, line } from "d3-shape";
+
+  import {
+    chart_toggled_currencies_set,
+    line_chart_mode,
+  } from "../stores/chart.ts";
+  import { ctx, short } from "../stores/format.ts";
+  import Axis from "./Axis.svelte";
+  import Brush from "./Brush.svelte";
+  import { currencies_scale, include_zero, pad_extent } from "./helpers.ts";
+  import type { LineChart, LineChartDatum } from "./line.ts";
+  import type { TooltipFindNode } from "./tooltip.ts";
+
+  interface Props {
+    chart: LineChart;
+    width: number;
+  }
+
+  let { chart, width }: Props = $props();
+
+  const uid = $props.id();
+  const today = new Date();
+
+  // Constant dimensions
+  const margin = { top: 10, right: 10, bottom: 30, left: 40 };
+  const height = 250;
+  const inner_height = height - margin.top - margin.bottom;
+
+  // Derived dimensions
+  let inner_width = $derived(width - margin.left - margin.right);
+
+  let data = $derived(chart.filter($chart_toggled_currencies_set));
+
+  // Scales and quadtree
+  let all_values = $derived(data.flatMap((d) => d.values));
+
+  let x_extent = $derived([
+    min(data, (s) => s.values[0]?.date) ?? today,
+    max(data, (s) => s.values[s.values.length - 1]?.date) ?? today,
+  ] as const);
+  let x = $derived(scaleUtc([0, inner_width]).domain(x_extent));
+  let value_extent = $derived(extent(all_values, (v) => v.value));
+  // Include zero in area charts so the entire area is shown, not a cropped part of it
+  let y_extent = $derived(
+    $line_chart_mode === "area" ? include_zero(value_extent) : value_extent,
+  );
+  // Span y-axis as max minus min value plus 5 percent margin
+  let y = $derived(scaleLinear([inner_height, 0]).domain(pad_extent(y_extent)));
+
+  // Quadtree for hover.
+  let quad = $derived(
+    quadtree(
+      all_values,
+      (d) => x(d.date),
+      (d) => y(d.value),
+    ),
+  );
+
+  let line_shape = $derived(
+    line<LineChartDatum>()
+      .x((d) => x(d.date))
+      .y((d) => y(d.value))
+      .curve(curveStepAfter),
+  );
+
+  let area_shape = $derived(
+    area<LineChartDatum>()
+      .x((d) => x(d.date))
+      .y1((d) => y(d.value))
+      .y0(Math.min(inner_height, y(0)))
+      .curve(curveStepAfter),
+  );
+
+  const dots_shape = (values: readonly LineChartDatum[]) => {
+    const path = pathRound(1);
+    for (const d of values) {
+      const cx = x(d.date);
+      const cy = y(d.value);
+      path.moveTo(cx + 2, cy);
+      path.arc(cx, cy, 2, 0, 2 * Math.PI);
+    }
+    return path.toString();
+  };
+
+  // Axes
+  let x_axis = $derived(axisBottom(x).tickSizeOuter(0));
+  let y_axis = $derived(
+    axisLeft(y).tickPadding(6).tickSize(-inner_width).tickFormat($short),
+  );
+
+  const tooltip_find: TooltipFindNode = (x_pointer, y_pointer) => {
+    const d = quad.find(x_pointer, y_pointer);
+    return d && [x(d.date), y(d.value), d, () => chart.tooltip_text($ctx, d)];
+  };
+
+  let desaturate_filter_id = $derived(`desaturate-future-${uid}`);
+  let desaturate_future_filter = $derived(
+    x_extent[1] > today ? `url(#${desaturate_filter_id})` : undefined,
+  );
+</script>
+
+<svg viewBox={`0 0 ${width.toString()} ${height.toString()}`}>
+  <defs>
+    <filter id={desaturate_filter_id}>
+      <feColorMatrix type="saturate" values="0.5" x={x(today)} />
+      <feBlend in2="SourceGraphic" />
+    </filter>
+  </defs>
+  <Brush
+    invert={x.invert.bind(x)}
+    height={inner_height}
+    find={tooltip_find}
+    transform={`translate(${margin.left.toString()},${margin.top.toString()})`}
+  >
+    <Axis x axis={x_axis} {inner_height} />
+    <Axis y axis={y_axis} />
+    {#if $line_chart_mode === "area"}
+      <g class="area" filter={desaturate_future_filter}>
+        {#each data as d (d.name)}
+          <path d={area_shape(d.values)} fill={$currencies_scale(d.name)} />
+        {/each}
+      </g>
+    {/if}
+    <g class="lines" filter={desaturate_future_filter}>
+      {#each data as d (d.name)}
+        <path d={line_shape(d.values)} stroke={$currencies_scale(d.name)} />
+      {/each}
+    </g>
+    {#if $line_chart_mode === "line"}
+      <g filter={desaturate_future_filter}>
+        {#each data as d (d.name)}
+          <path d={dots_shape(d.values)} fill={$currencies_scale(d.name)} />
+        {/each}
+      </g>
+    {/if}
+  </Brush>
+</svg>
+
+<style>
+  .lines path {
+    fill: none;
+    stroke-width: 2px;
+  }
+
+  .area path {
+    opacity: 0.3;
+  }
+</style>
